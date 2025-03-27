@@ -14,6 +14,32 @@ const fetchData = async (url, options) => {
   return textResponse;
 };
 
+export const getLocations = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/location`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch locations.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching locations:", error);
+    return [];
+  }
+};
+
+export const getLocationByLid = async (lid) => {
+  try {
+    const response = await fetch(`${BASE_URL}/location/${lid}`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch location.");
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching location:", error);
+    return [];
+  }
+};
+
 // Function to create a user credential
 export const createUserCredential = async (formData) => {
   return fetchData(`${BASE_URL}/user-credential/add`, {

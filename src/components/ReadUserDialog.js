@@ -17,6 +17,9 @@ const ReadUserDialog = ({ visible, setVisible, readData }) => {
             <strong>Username:</strong> {readData.userCredentials.username}
           </p>
           <p>
+            <strong>Email:</strong> {readData.userCredentials.email}
+            </p>
+          <p>
             <strong>Password:</strong> {readData.userCredentials.password}
           </p>
           <p>
@@ -25,6 +28,10 @@ const ReadUserDialog = ({ visible, setVisible, readData }) => {
           <p>
             <strong>Last Name:</strong> {readData.customer.lName}
           </p>
+          <p>
+  <strong>Location:</strong>{" "}
+  {readData.location?.city || "Unknown"}, {readData.location?.state || "Unknown"}
+</p>
         </div>
       ) : (
         <p>No user data available.</p>

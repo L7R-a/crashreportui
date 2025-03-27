@@ -21,6 +21,7 @@ const UpdateUserDialog = ({ visible, setVisible, handleSubmit, renderInputField 
         <h2 style={{ marginBottom: "1rem", color: "#555" }}>Enter new information to update</h2>
         {renderInputField("New First Name", "newFName")}
         {renderInputField("New Last Name", "newLName")}
+        {renderInputField("New Email", "newEmail", "email")}
         {renderInputField("New Password", "newPassword", "password")}
         <Button label="Submit" type="submit" className="p-button-warning" />
       </form>

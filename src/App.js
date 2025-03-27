@@ -22,7 +22,9 @@ import {
   updateUserCredential,
   updateCustomer,
   deleteUserCredential,
-  deleteCustomer
+  deleteCustomer,
+  getLocations,
+  getLocationByLid
 } from "./services/apiService";
 
 
@@ -35,6 +37,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false); // Track if the user is logged in
   const toast = useRef(null);
   const [readData, setReadData] = useState(null); // State to hold the data to display in the read dialog
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState(null);
 
   // UseEffect used to show the backend results
   useEffect(() => {
@@ -43,6 +47,19 @@ function App() {
       setToastData(null);
     }
   }, [toastData]);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      const locationData = await getLocations();
+      setLocations(locationData);
+    };
+    fetchLocations();
+  }, []);
+
+  const handleLocationChange = (e) => {
+    setSelectedLocation(e.value);
+    setFormData({ ...formData, lid: e.value.lid });
+  };
 
   //HandleInputChange function used to handle the input change in the forms
   const handleInputChange = (e) => {
@@ -82,18 +99,22 @@ function App() {
     
   
     if (action === "create") {
-      if (!formData.username || !formData.password || !formData.fName || !formData.lName) {
+      if (!formData.username || !formData.password || !formData.email || !formData.fName || !formData.lName || !formData.lid) {
         setToastData({ severity: "error", summary: "Error", detail: "Username and password cannot be blank.", life: 5000 });
         return;
       }
   
       try {
+
         // Create UserCredential first
-        const userMessage = await createUserCredential(formData);
-  
+        const userMessage = await createUserCredential({
+          username: formData.username,
+          password: formData.password,
+          email: formData.email,
+        });  
         if (userMessage) {
           // Proceed to create customer if user creation worked
-          const customerData = { fName: formData.fName, lName: formData.lName, username: formData.username };
+          const customerData = { fName: formData.fName, lName: formData.lName, username: formData.username, lid: formData.lid};
           const customerMessage = await createCustomer(customerData);
   
           if (customerMessage) {
@@ -108,47 +129,76 @@ function App() {
   
     } else if (action === "login") {
       if (!formData.username || !formData.password) {
-        setToastData({ severity: "error", summary: "Error", detail: "Username and password cannot be blank.", life: 5000 });
+        setToastData({
+          severity: "error",
+          summary: "Error",
+          detail: "Username and password cannot be blank.",
+          life: 5000,
+        });
         return;
       }
-  
+    
       try {
         const userMessage = await loginUser(formData);
-  
+    
         if (userMessage) {
           // Fetch customer data after successful login
           const customer = await getCustomerByUsername(formData.username);
-  
+    
           if (customer) {
+            let location = null;
+            if (customer.lid) {
+              try {
+                location = await getLocationByLid(customer.lid);
+              } catch (error) {
+                console.error("Error fetching location:", error);
+              }
+            }
+    
             const userData = {
               userCredentials: userMessage,
               customer: customer,
+              location: location || { city: "Unknown", state: "Unknown" },
             };
+    
             localStorage.setItem(
               "userData",
               JSON.stringify({
                 userCredentials:
                   typeof userMessage === "string" ? JSON.parse(userMessage) : userMessage,
-                customer:
-                  typeof customer === "string" ? JSON.parse(customer) : customer,
+                customer: typeof customer === "string" ? JSON.parse(customer) : customer,
+                location: location || { city: "Unknown", state: "Unknown" },
               })
-            );            setReadData({
-              userCredentials: userMessage,
-              customer: customer,
+            );
+    
+            setReadData(userData);
+    
+            setToastData({
+              severity: "success",
+              summary: "Success",
+              detail: "Logged in successfully!",
+              life: 5000,
             });
-            setToastData({ severity: "success", summary: "Success", detail: "Logged in successfully!", life: 5000 });
             setIsLoggedIn(true);
-            console.log("Updated Read Data:", JSON.parse(localStorage.getItem("userData")));
           } else {
-            setToastData({ severity: "warn", summary: "Partial Success", detail: "Logged in, but customer data could not be retrieved.", life: 5000 });
+            setToastData({
+              severity: "warn",
+              summary: "Partial Success",
+              detail: "Logged in, but customer data could not be retrieved.",
+              life: 5000,
+            });
           }
         }
       } catch (error) {
-        setToastData({ severity: "error", summary: "Error", detail: error.message || "Error logging in.", life: 5000 });
+        setToastData({
+          severity: "error",
+          summary: "Error",
+          detail: error.message || "Error logging in.",
+          life: 5000,
+        });
       }
-  
     } else if (action === "update") {
-      if (!formData.newFName && !formData.newLName && !formData.newPassword) {
+      if (!formData.newFName && !formData.newLName && !formData.newPassword && !formData.newEmail) {
         setToastData({ severity: "error", summary: "Error", detail: "Please enter new information to update.", life: 5000 });
         return;
       }
@@ -157,6 +207,7 @@ function App() {
         const updateData = {
           username: userData.userCredentials.username,
           password: formData.newPassword || userData.userCredentials.password,
+          email: formData.newEmail || userData.userCredentials.email,
         };
   
         const updateMessage = await updateUserCredential(updateData);
@@ -167,6 +218,7 @@ function App() {
             fName: formData.newFName || userData.customer.fName,
             lName: formData.newLName || userData.customer.lName,
             cid: userData.customer.cid,
+            lid: userData.customer.lid,
           };
   
           const customerMessage = await updateCustomer(customerData);
@@ -176,9 +228,11 @@ function App() {
               userCredentials: {
                 username: updateData.username,
                 password: updateData.password,
+                email: updateData.email
               },
               customer: {
                 cid: customerData.cid,
+                lid: customerData.lid,
                 username: customerData.username,
                 fName: customerData.fName,
                 lName: customerData.lName,
@@ -277,7 +331,8 @@ function App() {
         </div>
 
         <LoginDialog visible={visible} setVisible={setVisible} handleSubmit={handleSubmit} renderInputField={renderInputField} />
-        <CreateUserDialog visible={visible} setVisible={setVisible} handleSubmit={handleSubmit} renderInputField={renderInputField} />
+        <CreateUserDialog visible={visible} setVisible={setVisible} handleSubmit={handleSubmit} renderInputField={renderInputField}  
+            locations={locations} selectedLocation={selectedLocation} handleLocationChange={handleLocationChange}/>
         <ReadUserDialog visible={visible} setVisible={setVisible} readData={readData} />
         <UpdateUserDialog visible={visible} setVisible={setVisible} handleSubmit={handleSubmit} renderInputField={renderInputField} />
         <DeleteUserDialog visible={visible} setVisible={setVisible} handleSubmit={handleSubmit} />
