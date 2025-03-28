@@ -143,8 +143,20 @@ function App() {
     
         if (userMessage) {
           // Fetch customer data after successful login
-          const customer = await getCustomerByUsername(formData.username);
-    
+          let customer = await getCustomerByUsername(formData.username);
+
+          // Check if customer is an object and not a string
+          if (typeof customer === "string") {
+            console.log("Customer is a string. Parsing...");
+            customer = JSON.parse(customer);
+          } else {
+            console.log("Customer is already an object.");
+          }
+          
+          // Check the type and lid
+          console.log("Customer:", customer);
+          console.log("LID:", customer.lid);
+
           if (customer) {
             let location = null;
             if (customer.lid) {
