@@ -100,7 +100,7 @@ function App() {
   
     if (action === "create") {
       if (!formData.username || !formData.password || !formData.email || !formData.fName || !formData.lName || !formData.lid) {
-        setToastData({ severity: "error", summary: "Error", detail: "Username and password cannot be blank.", life: 5000 });
+        setToastData({ severity: "error", summary: "Error", detail: "All fields must be filled in.", life: 5000 });
         return;
       }
   
@@ -125,6 +125,7 @@ function App() {
         }
       } catch (error) {
         setToastData({ severity: "error", summary: "Error", detail: error.message || "Error creating user.", life: 5000 });
+        return;
       }
   
     } else if (action === "login") {
@@ -208,6 +209,7 @@ function App() {
           detail: error.message || "Error logging in.",
           life: 5000,
         });
+        return;
       }
     } else if (action === "update") {
       if (!formData.newFName && !formData.newLName && !formData.newPassword && !formData.newEmail) {
