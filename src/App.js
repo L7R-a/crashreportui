@@ -251,6 +251,7 @@ function App() {
                 fName: customerData.fName,
                 lName: customerData.lName,
               },
+              location: userData.location,
             };
   
             localStorage.setItem("userData", JSON.stringify(updatedUserData));
